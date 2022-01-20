@@ -83,6 +83,11 @@ final class AddressBuilder
     private $timezone;
 
     /**
+     * @var string|null
+     */
+    private $type;
+
+    /**
      * A storage for extra parameters.
      *
      * @var array
@@ -124,7 +129,8 @@ final class AddressBuilder
             $this->locality,
             $this->subLocality,
             $country,
-            $this->timezone
+            $this->timezone,
+            $this->type
         );
     }
 
@@ -282,6 +288,18 @@ final class AddressBuilder
     public function setTimezone($timezone): self
     {
         $this->timezone = $timezone;
+
+        return $this;
+    }
+
+    /**
+     * @param string|null $type
+     *
+     * @return AddressBuilder
+     */
+    public function setType($type): self
+    {
+        $this->type = $type;
 
         return $this;
     }

@@ -75,6 +75,11 @@ class Address implements Location
     private $providedBy;
 
     /**
+     * @var string
+     */
+    private $type;
+
+    /**
      * @param string               $providedBy
      * @param AdminLevelCollection $adminLevels
      * @param Coordinates|null     $coordinates
@@ -86,6 +91,7 @@ class Address implements Location
      * @param string|null          $subLocality
      * @param Country|null         $country
      * @param string|null          $timezone
+     * @param string|null          $type
      */
     public function __construct(
         string $providedBy,
@@ -98,7 +104,8 @@ class Address implements Location
         string $locality = null,
         string $subLocality = null,
         Country $country = null,
-        string $timezone = null
+        string $timezone = null,
+        string $type = null,
     ) {
         $this->providedBy = $providedBy;
         $this->adminLevels = $adminLevels;
@@ -111,6 +118,7 @@ class Address implements Location
         $this->subLocality = $subLocality;
         $this->country = $country;
         $this->timezone = $timezone;
+        $this->type = $type;
     }
 
     /**
@@ -202,6 +210,14 @@ class Address implements Location
     }
 
     /**
+     * @return string
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    /**
      * Create an Address with an array. Useful for testing.
      *
      * @param array $data
@@ -229,6 +245,7 @@ class Address implements Location
             'country' => null,
             'countryCode' => null,
             'timezone' => null,
+            'type' => 'n/a',
         ];
 
         $data = array_merge($defaults, $data);
@@ -266,7 +283,8 @@ class Address implements Location
             $data['locality'],
             $data['subLocality'],
             self::createCountry($data['country'], $data['countryCode']),
-            $data['timezone']
+            $data['timezone'],
+            $data['type']
         );
     }
 
@@ -365,6 +383,7 @@ class Address implements Location
             'country' => $countryName,
             'countryCode' => $countryCode,
             'timezone' => $this->timezone,
+            'type' => $this->type,
         ];
     }
 }
