@@ -16,13 +16,13 @@ use Geocoder\Collection;
 use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\QuotaExceeded;
 use Geocoder\Exception\UnsupportedOperation;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * Mapzen has shut down as their APIs as of February 1, 2018.
@@ -34,12 +34,12 @@ final class Mapzen extends AbstractHttpProvider implements Provider
     /**
      * @var string
      */
-    const GEOCODE_ENDPOINT_URL = 'https://search.mapzen.com/v1/search?text=%s&api_key=%s&size=%d';
+    public const GEOCODE_ENDPOINT_URL = 'https://search.mapzen.com/v1/search?text=%s&api_key=%s&size=%d';
 
     /**
      * @var string
      */
-    const REVERSE_ENDPOINT_URL = 'https://search.mapzen.com/v1/reverse?point.lat=%f&point.lon=%f&api_key=%s&size=%d';
+    public const REVERSE_ENDPOINT_URL = 'https://search.mapzen.com/v1/reverse?point.lat=%f&point.lon=%f&api_key=%s&size=%d';
 
     /**
      * @var string
@@ -51,10 +51,10 @@ final class Mapzen extends AbstractHttpProvider implements Provider
      *
      * @deprecated https://github.com/geocoder-php/Geocoder/issues/808
      *
-     * @param HttpClient $client an HTTP adapter
-     * @param string     $apiKey an API key
+     * @param ClientInterface $client an HTTP adapter
+     * @param string          $apiKey an API key
      */
-    public function __construct(HttpClient $client, string $apiKey)
+    public function __construct(ClientInterface $client, string $apiKey)
     {
         if (empty($apiKey)) {
             throw new InvalidCredentials('No API key provided.');
@@ -64,9 +64,6 @@ final class Mapzen extends AbstractHttpProvider implements Provider
         parent::__construct($client);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -81,9 +78,6 @@ final class Mapzen extends AbstractHttpProvider implements Provider
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         $coordinates = $query->getCoordinates();
@@ -94,19 +88,11 @@ final class Mapzen extends AbstractHttpProvider implements Provider
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'mapzen';
     }
 
-    /**
-     * @param $url
-     *
-     * @return Collection
-     */
     private function executeQuery(string $url): AddressCollection
     {
         $content = $this->getUrlContents($url);
@@ -178,7 +164,7 @@ final class Mapzen extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param array $components
+     * @param array<string, mixed> $components
      *
      * @return string|null
      */
@@ -190,7 +176,7 @@ final class Mapzen extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param array $components
+     * @param array<string, mixed> $components
      *
      * @return string|null
      */
@@ -202,7 +188,7 @@ final class Mapzen extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param array $components
+     * @param array<string, mixed> $components
      *
      * @return string|null
      */
@@ -214,8 +200,8 @@ final class Mapzen extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param array $components
-     * @param array $keys
+     * @param array<string, mixed> $components
+     * @param string[]             $keys
      *
      * @return string|null
      */

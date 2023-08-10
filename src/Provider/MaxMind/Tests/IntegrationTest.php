@@ -12,28 +12,28 @@ namespace Geocoder\Provider\MaxMind\Tests;
 
 use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\MaxMind\MaxMind;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
  */
 class IntegrationTest extends ProviderIntegrationTest
 {
-    protected $testAddress = false;
+    protected bool $testAddress = false;
 
-    protected $testReverse = false;
+    protected bool $testReverse = false;
 
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
         return new MaxMind($httpClient, $this->getApiKey());
     }
 
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    protected function getApiKey()
+    protected function getApiKey(): string
     {
         if (!isset($_SERVER['MAXMIND_API_KEY'])) {
             $this->markTestSkipped('No MaxMind API key');

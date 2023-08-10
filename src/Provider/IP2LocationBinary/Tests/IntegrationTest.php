@@ -14,23 +14,22 @@ namespace Geocoder\Provider\IP2LocationBinary\Tests;
 
 use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\IP2LocationBinary\IP2LocationBinary;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author IP2Location <support@ip2location.com>
  */
 class IntegrationTest extends ProviderIntegrationTest
 {
-    protected $skippedTests = [
-    ];
+    protected array $skippedTests = [];
 
-    protected $testAddress = false;
+    protected bool $testAddress = false;
 
-    protected $testReverse = false;
+    protected bool $testReverse = false;
 
-    protected $testIpv6 = false;
+    protected bool $testIpv6 = false;
 
-    protected $testHttpProvider = false;
+    protected bool $testHttpProvider = false;
 
     public static function setUpBeforeClass(): void
     {
@@ -41,19 +40,19 @@ class IntegrationTest extends ProviderIntegrationTest
         parent::setUpBeforeClass();
     }
 
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
         // Download this BIN database from https://lite.ip2location.com/database/ip-country-region-city-latitude-longitude-zipcode
         return new IP2LocationBinary(__DIR__.'/fixtures/IP2LOCATION-LITE-DB9.IPV6.BIN', \IP2Location\Database::FILE_IO);
     }
 
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    protected function getApiKey()
+    protected function getApiKey(): string
     {
-        return null;
+        return '';
     }
 }

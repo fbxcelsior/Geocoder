@@ -20,19 +20,16 @@ use Geocoder\Exception\OutOfBounds;
  *
  * @author William Durand <william.durand1@gmail.com>
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
+ *
+ * @template-extends \IteratorAggregate<int, Location>
  */
 interface Collection extends \IteratorAggregate, \Countable
 {
     /**
-     * @return Location
-     *
      * @throws CollectionIsEmpty
      */
     public function first(): Location;
 
-    /**
-     * @return bool
-     */
     public function isEmpty(): bool;
 
     /**
@@ -40,14 +37,9 @@ interface Collection extends \IteratorAggregate, \Countable
      */
     public function slice(int $offset, int $length = null);
 
-    /**
-     * @return bool
-     */
     public function has(int $index): bool;
 
     /**
-     * @return Location
-     *
      * @throws OutOfBounds
      */
     public function get(int $index): Location;

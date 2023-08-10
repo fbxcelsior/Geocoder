@@ -16,13 +16,13 @@ use Geocoder\Collection;
 use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\InvalidServerResponse;
 use Geocoder\Exception\UnsupportedOperation;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Andrea Cristaudo <andrea.cristaudo@gmail.com>
@@ -32,34 +32,34 @@ final class MaxMind extends AbstractHttpProvider implements Provider
     /**
      * @var string Country, City, ISP and Organization
      */
-    const CITY_EXTENDED_SERVICE = 'f';
+    public const CITY_EXTENDED_SERVICE = 'f';
 
     /**
      * @var string Extended
      */
-    const OMNI_SERVICE = 'e';
+    public const OMNI_SERVICE = 'e';
 
     /**
      * @var string
      */
-    const GEOCODE_ENDPOINT_URL_SSL = 'https://geoip.maxmind.com/%s?l=%s&i=%s';
+    public const GEOCODE_ENDPOINT_URL_SSL = 'https://geoip.maxmind.com/%s?l=%s&i=%s';
 
     /**
      * @var string
      */
-    private $apiKey = null;
+    private $apiKey;
 
     /**
      * @var string
      */
-    private $service = null;
+    private $service;
 
     /**
-     * @param HttpClient $client  an HTTP adapter
-     * @param string     $apiKey  an API key
-     * @param string     $service the specific Maxmind service to use (optional)
+     * @param ClientInterface $client  an HTTP adapter
+     * @param string          $apiKey  an API key
+     * @param string          $service the specific Maxmind service to use (optional)
      */
-    public function __construct(HttpClient $client, string $apiKey, string $service = self::CITY_EXTENDED_SERVICE)
+    public function __construct(ClientInterface $client, string $apiKey, string $service = self::CITY_EXTENDED_SERVICE)
     {
         if (empty($apiKey)) {
             throw new InvalidCredentials('No API key provided.');
@@ -70,9 +70,6 @@ final class MaxMind extends AbstractHttpProvider implements Provider
         parent::__construct($client);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -90,27 +87,16 @@ final class MaxMind extends AbstractHttpProvider implements Provider
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         throw new UnsupportedOperation('The MaxMind provider is not able to do reverse geocoding.');
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'maxmind';
     }
 
-    /**
-     * @param string $url
-     *
-     * @return Collection
-     */
     private function executeQuery(string $url): AddressCollection
     {
         $fields = $this->fieldsForService($this->service);
@@ -151,7 +137,12 @@ final class MaxMind extends AbstractHttpProvider implements Provider
         return $countryNames[$code];
     }
 
-    private function replaceAdmins($data)
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    private function replaceAdmins(array $data): array
     {
         $adminLevels = [];
 
@@ -172,8 +163,6 @@ final class MaxMind extends AbstractHttpProvider implements Provider
      * We do not support Country and City services because they do not return much fields.
      *
      * @see http://dev.maxmind.com/geoip/web-services
-     *
-     * @param string $service
      *
      * @return string[]
      */
@@ -226,7 +215,7 @@ final class MaxMind extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @return array
+     * @return array<string, string>
      */
     private function getCountryNames(): array
     {

@@ -40,6 +40,21 @@ final class PhotonAddress extends Address
     private $osmTag;
 
     /**
+     * @var string|null
+     */
+    private $state;
+
+    /**
+     * @var string|null
+     */
+    private $county;
+
+    /**
+     * @var string|null
+     */
+    private $district;
+
+    /**
      * @return string|null
      */
     public function getName()
@@ -47,11 +62,6 @@ final class PhotonAddress extends Address
         return $this->name;
     }
 
-    /**
-     * @param string|null $name
-     *
-     * @return PhotonAddress
-     */
     public function withName(string $name = null): self
     {
         $new = clone $this;
@@ -68,11 +78,6 @@ final class PhotonAddress extends Address
         return $this->osmId;
     }
 
-    /**
-     * @param int|null $osmId
-     *
-     * @return PhotonAddress
-     */
     public function withOSMId(int $osmId = null): self
     {
         $new = clone $this;
@@ -89,11 +94,6 @@ final class PhotonAddress extends Address
         return $this->osmType;
     }
 
-    /**
-     * @param string|null $osmType
-     *
-     * @return PhotonAddress
-     */
     public function withOSMType(string $osmType = null): self
     {
         $new = clone $this;
@@ -110,12 +110,6 @@ final class PhotonAddress extends Address
         return $this->osmTag;
     }
 
-    /**
-     * @param string|null $key
-     * @param string|null $value
-     *
-     * @return PhotonAddress
-     */
     public function withOSMTag(string $key = null, string $value = null): self
     {
         $new = clone $this;
@@ -128,6 +122,54 @@ final class PhotonAddress extends Address
         } else {
             $new->osmTag = null;
         }
+
+        return $new;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getState()
+    {
+        return $this->state;
+    }
+
+    public function withState(string $state = null): self
+    {
+        $new = clone $this;
+        $new->state = $state;
+
+        return $new;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCounty()
+    {
+        return $this->county;
+    }
+
+    public function withCounty(string $county = null): self
+    {
+        $new = clone $this;
+        $new->county = $county;
+
+        return $new;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getDistrict()
+    {
+        return $this->district;
+    }
+
+    public function withDistrict(string $district = null): self
+    {
+        $new = clone $this;
+        $new->district = $district;
 
         return $new;
     }

@@ -13,27 +13,28 @@ declare(strict_types=1);
 namespace Geocoder\Provider\GraphHopper\Tests;
 
 use Geocoder\IntegrationTest\BaseTestCase;
+use Geocoder\Model\Bounds;
+use Geocoder\Provider\GraphHopper\GraphHopper;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Provider\GraphHopper\GraphHopper;
 
 /**
  * @author Gary Gale <gary@vicchi.org>
  */
 class GraphHopperTest extends BaseTestCase
 {
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    public function testGetName()
+    public function testGetName(): void
     {
         $provider = new GraphHopper($this->getMockedHttpClient(), 'api_key');
         $this->assertEquals('graphhopper', $provider->getName());
     }
 
-    public function testGeocodeWithRealAddress()
+    public function testGeocodeWithRealAddress(): void
     {
         if (!isset($_SERVER['GRAPHHOPPER_API_KEY'])) {
             $this->markTestSkipped('You need to configure the GRAPHHOPPER_API_KEY value in phpunit.xml.');
@@ -55,7 +56,7 @@ class GraphHopperTest extends BaseTestCase
         $this->assertEquals('United Kingdom', $result->getCountry()->getName());
     }
 
-    public function testGeocodeWithRealAddressAndLocale()
+    public function testGeocodeWithRealAddressAndLocale(): void
     {
         if (!isset($_SERVER['GRAPHHOPPER_API_KEY'])) {
             $this->markTestSkipped('You need to configure the GRAPHHOPPER_API_KEY value in phpunit.xml.');
@@ -77,7 +78,48 @@ class GraphHopperTest extends BaseTestCase
         $this->assertEquals('Royaume-Uni', $result->getCountry()->getName());
     }
 
-    public function testReverseWithRealCoordinates()
+    public function testGeocodeInsideBounds(): void
+    {
+        if (!isset($_SERVER['GRAPHHOPPER_API_KEY'])) {
+            $this->markTestSkipped('You need to configure the GRAPHHOPPER_API_KEY value in phpunit.xml.');
+        }
+
+        $provider = new GraphHopper($this->getHttpClient($_SERVER['GRAPHHOPPER_API_KEY']), $_SERVER['GRAPHHOPPER_API_KEY']);
+        $results = $provider->geocodeQuery(
+            GeocodeQuery::create('242 Acklam Road, London, United Kingdom')
+                ->withLocale('fr')
+                ->withBounds(new Bounds(50, -10, 55, 10))
+        );
+        $this->assertInstanceOf('Geocoder\Model\AddressCollection', $results);
+        $this->assertCount(1, $results);
+
+        /** @var \Geocoder\Model\Address $result */
+        $result = $results->first();
+        $this->assertInstanceOf('\Geocoder\Model\Address', $result);
+        $this->assertEqualsWithDelta(51.521124, $result->getCoordinates()->getLatitude(), 0.01);
+        $this->assertEqualsWithDelta(-0.20360200000000001, $result->getCoordinates()->getLongitude(), 0.01);
+        $this->assertEquals('Acklam Road', $result->getStreetName());
+        $this->assertEquals('Londres', $result->getLocality());
+        $this->assertEquals('Royaume-Uni', $result->getCountry()->getName());
+    }
+
+    public function testGeocodeOutsideBounds(): void
+    {
+        if (!isset($_SERVER['GRAPHHOPPER_API_KEY'])) {
+            $this->markTestSkipped('You need to configure the GRAPHHOPPER_API_KEY value in phpunit.xml.');
+        }
+
+        $provider = new GraphHopper($this->getHttpClient($_SERVER['GRAPHHOPPER_API_KEY']), $_SERVER['GRAPHHOPPER_API_KEY']);
+        $results = $provider->geocodeQuery(
+            GeocodeQuery::create('242 Acklam Road, London, United Kingdom')
+                ->withLocale('fr')
+                ->withBounds(new Bounds(20, 10, 30, 20))
+        );
+        $this->assertInstanceOf('Geocoder\Model\AddressCollection', $results);
+        $this->assertCount(0, $results);
+    }
+
+    public function testReverseWithRealCoordinates(): void
     {
         if (!isset($_SERVER['GRAPHHOPPER_API_KEY'])) {
             $this->markTestSkipped('You need to configure the GRAPHHOPPER_API_KEY value in phpunit.xml.');
@@ -101,7 +143,7 @@ class GraphHopperTest extends BaseTestCase
         $this->assertEquals('United Kingdom', $result->getCountry()->getName());
     }
 
-    public function testGeocodeWithLocalhostIPv4()
+    public function testGeocodeWithLocalhostIPv4(): void
     {
         $this->expectException(\Geocoder\Exception\UnsupportedOperation::class);
         $this->expectExceptionMessage('The GraphHopper provider does not support IP addresses, only street addresses.');
@@ -110,7 +152,7 @@ class GraphHopperTest extends BaseTestCase
         $provider->geocodeQuery(GeocodeQuery::create('127.0.0.1'));
     }
 
-    public function testGeocodeWithLocalhostIPv6()
+    public function testGeocodeWithLocalhostIPv6(): void
     {
         $this->expectException(\Geocoder\Exception\UnsupportedOperation::class);
         $this->expectExceptionMessage('The GraphHopper provider does not support IP addresses, only street addresses.');
@@ -119,7 +161,7 @@ class GraphHopperTest extends BaseTestCase
         $provider->geocodeQuery(GeocodeQuery::create('::1'));
     }
 
-    public function testGeocodeWithRealIPv4()
+    public function testGeocodeWithRealIPv4(): void
     {
         $this->expectException(\Geocoder\Exception\UnsupportedOperation::class);
         $this->expectExceptionMessage('The GraphHopper provider does not support IP addresses, only street addresses.');
@@ -128,7 +170,7 @@ class GraphHopperTest extends BaseTestCase
         $provider->geocodeQuery(GeocodeQuery::create('74.200.247.59'));
     }
 
-    public function testGeocodeWithRealIPv6()
+    public function testGeocodeWithRealIPv6(): void
     {
         $this->expectException(\Geocoder\Exception\UnsupportedOperation::class);
         $this->expectExceptionMessage('The GraphHopper provider does not support IP addresses, only street addresses.');

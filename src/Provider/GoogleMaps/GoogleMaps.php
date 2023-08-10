@@ -24,7 +24,7 @@ use Geocoder\Provider\GoogleMaps\Model\GoogleAddress;
 use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author William Durand <william.durand1@gmail.com>
@@ -34,12 +34,12 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
     /**
      * @var string
      */
-    const GEOCODE_ENDPOINT_URL_SSL = 'https://maps.googleapis.com/maps/api/geocode/json?address=%s';
+    public const GEOCODE_ENDPOINT_URL_SSL = 'https://maps.googleapis.com/maps/api/geocode/json?address=%s';
 
     /**
      * @var string
      */
-    const REVERSE_ENDPOINT_URL_SSL = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=%F,%F';
+    public const REVERSE_ENDPOINT_URL_SSL = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=%F,%F';
 
     /**
      * @var string|null
@@ -71,17 +71,17 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
      * https://developers.google.com/maps/documentation/business/
      * Maps for Business is no longer accepting new signups.
      *
-     * @param HttpClient $client     An HTTP adapter
-     * @param string     $clientId   Your Client ID
-     * @param string     $privateKey Your Private Key (optional)
-     * @param string     $region     Region biasing (optional)
-     * @param string     $apiKey     Google Geocoding API key (optional)
-     * @param string     $channel    Google Channel parameter (optional)
+     * @param ClientInterface $client     An HTTP adapter
+     * @param string          $clientId   Your Client ID
+     * @param string          $privateKey Your Private Key (optional)
+     * @param string          $region     Region biasing (optional)
+     * @param string          $apiKey     Google Geocoding API key (optional)
+     * @param string          $channel    Google Channel parameter (optional)
      *
      * @return GoogleMaps
      */
     public static function business(
-        HttpClient $client,
+        ClientInterface $client,
         string $clientId,
         string $privateKey = null,
         string $region = null,
@@ -97,11 +97,11 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param HttpClient $client An HTTP adapter
-     * @param string     $region Region biasing (optional)
-     * @param string     $apiKey Google Geocoding API key (optional)
+     * @param ClientInterface $client An HTTP adapter
+     * @param string          $region Region biasing (optional)
+     * @param string          $apiKey Google Geocoding API key (optional)
      */
-    public function __construct(HttpClient $client, string $region = null, string $apiKey = null)
+    public function __construct(ClientInterface $client, string $region = null, string $apiKey = null)
     {
         parent::__construct($client);
 
@@ -152,16 +152,12 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
         return $this->fetchUrl($url, $query->getLocale(), $query->getLimit(), $query->getData('region', $this->region));
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'google_maps';
     }
 
     /**
-     * @param string $url
      * @param string $locale
      *
      * @return string query with extra params
@@ -200,12 +196,8 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param string $url
      * @param string $locale
-     * @param int    $limit
      * @param string $region
-     *
-     * @return AddressCollection
      *
      * @throws InvalidServerResponse
      * @throws InvalidCredentials
@@ -280,11 +272,10 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
     /**
      * Update current resultSet with given key/value.
      *
-     * @param AddressBuilder $builder
-     * @param string         $type    Component type
-     * @param object         $values  The component values
+     * @param string $type   Component type
+     * @param object $values The component values
      */
-    private function updateAddressComponent(AddressBuilder $builder, string $type, $values)
+    private function updateAddressComponent(AddressBuilder $builder, string $type, $values): void
     {
         switch ($type) {
             case 'postal_code':
@@ -395,9 +386,7 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
     /**
      * Serialize the component query parameter.
      *
-     * @param array $components
-     *
-     * @return string
+     * @param array<string, string> $components
      */
     private function serializeComponents(array $components): string
     {
@@ -409,7 +398,6 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
     /**
      * Decode the response content and validate it to make sure it does not have any errors.
      *
-     * @param string $url
      * @param string $content
      *
      * @return \Stdclass result form json_decode()
@@ -451,10 +439,9 @@ final class GoogleMaps extends AbstractHttpProvider implements Provider
     /**
      * Parse coordinates and bounds.
      *
-     * @param AddressBuilder $builder
-     * @param \Stdclass      $result
+     * @param \Stdclass $result
      */
-    private function parseCoordinates(AddressBuilder $builder, $result)
+    private function parseCoordinates(AddressBuilder $builder, $result): void
     {
         $coordinates = $result->geometry->location;
         $builder->setCoordinates($coordinates->lat, $coordinates->lng);

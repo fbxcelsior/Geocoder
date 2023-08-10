@@ -13,9 +13,9 @@ declare(strict_types=1);
 namespace Geocoder\Provider\Cache;
 
 use Geocoder\Collection;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Provider\Provider;
 use Psr\SimpleCache\CacheInterface;
 
 /**
@@ -41,20 +41,21 @@ class ProviderCache implements Provider
     protected $lifetime;
 
     /**
-     * @param Provider       $realProvider
-     * @param CacheInterface $cache
-     * @param int            $lifetime
+     * If true, include the real provider name into the cache key.
      */
-    final public function __construct(Provider $realProvider, CacheInterface $cache, int $lifetime = null)
+    private bool $separateCache;
+
+    /**
+     * @param int $lifetime
+     */
+    final public function __construct(Provider $realProvider, CacheInterface $cache, int $lifetime = null, bool $separateCache = false)
     {
         $this->realProvider = $realProvider;
         $this->cache = $cache;
         $this->lifetime = $lifetime;
+        $this->separateCache = $separateCache;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     final public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $cacheKey = $this->getCacheKey($query);
@@ -68,9 +69,6 @@ class ProviderCache implements Provider
         return $result;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     final public function reverseQuery(ReverseQuery $query): Collection
     {
         $cacheKey = $this->getCacheKey($query);
@@ -84,27 +82,23 @@ class ProviderCache implements Provider
         return $result;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return sprintf('%s (cache)', $this->realProvider->getName());
     }
 
-    final public function __call($method, $args)
+    final public function __call(string $method, array $args): mixed
     {
         return call_user_func_array([$this->realProvider, $method], $args);
     }
 
     /**
      * @param GeocodeQuery|ReverseQuery $query
-     *
-     * @return string
      */
     protected function getCacheKey($query): string
     {
-        // Include the major version number of the geocoder to avoid issues unserializing.
-        return 'v4'.sha1((string) $query);
+        // Include the major version number of the geocoder to avoid issues unserializing
+        // and real provider name if we want to separate cache
+        return 'v4'.sha1((string) $query.($this->separateCache ? $this->realProvider->getName() : ''));
     }
 }

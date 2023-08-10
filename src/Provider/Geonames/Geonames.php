@@ -16,16 +16,16 @@ use Geocoder\Collection;
 use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\InvalidServerResponse;
 use Geocoder\Exception\UnsupportedOperation;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\AddressBuilder;
 use Geocoder\Model\AddressCollection;
 use Geocoder\Model\AdminLevelCollection;
 use Geocoder\Provider\Geonames\Model\CountryInfo;
 use Geocoder\Provider\Geonames\Model\GeonamesAddress;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Giovanni Pirrotta <giovanni.pirrotta@gmail.com>
@@ -35,17 +35,17 @@ final class Geonames extends AbstractHttpProvider implements Provider
     /**
      * @var string
      */
-    const GEOCODE_ENDPOINT_URL = 'http://api.geonames.org/searchJSON?q=%s&maxRows=%d&style=full&username=%s';
+    public const GEOCODE_ENDPOINT_URL = 'http://api.geonames.org/searchJSON?q=%s&maxRows=%d&style=full&username=%s';
 
     /**
      * @var string
      */
-    const REVERSE_ENDPOINT_URL = 'http://api.geonames.org/findNearbyPlaceNameJSON?lat=%F&lng=%F&style=full&maxRows=%d&username=%s';
+    public const REVERSE_ENDPOINT_URL = 'http://api.geonames.org/findNearbyPlaceNameJSON?lat=%F&lng=%F&style=full&maxRows=%d&username=%s';
 
     /**
      * @var string
      */
-    const BASE_ENDPOINT_URL = 'http://api.geonames.org/%s?username=%s';
+    public const BASE_ENDPOINT_URL = 'http://api.geonames.org/%s?username=%s';
 
     /**
      * @var string
@@ -53,10 +53,10 @@ final class Geonames extends AbstractHttpProvider implements Provider
     private $username;
 
     /**
-     * @param HttpClient $client   An HTTP adapter
-     * @param string     $username Username login (Free registration at http://www.geonames.org/login)
+     * @param ClientInterface $client   An HTTP adapter
+     * @param string          $username Username login (Free registration at http://www.geonames.org/login)
      */
-    public function __construct(HttpClient $client, string $username)
+    public function __construct(ClientInterface $client, string $username)
     {
         if (empty($username)) {
             throw new InvalidCredentials('No username provided.');
@@ -66,9 +66,6 @@ final class Geonames extends AbstractHttpProvider implements Provider
         parent::__construct($client);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -83,9 +80,6 @@ final class Geonames extends AbstractHttpProvider implements Provider
         return $this->executeQuery($url, $query->getLocale());
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         $coordinates = $query->getCoordinates();
@@ -98,12 +92,7 @@ final class Geonames extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param string|null $country
-     * @param string|null $locale
-     *
-     * @return array
-     *
-     * @throws \Geocoder\Exception\Exception
+     * @return CountryInfo[]
      */
     public function getCountryInfo(string $country = null, string $locale = null): array
     {
@@ -160,20 +149,11 @@ final class Geonames extends AbstractHttpProvider implements Provider
         return $results;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'geonames';
     }
 
-    /**
-     * @param string      $url
-     * @param string|null $locale
-     *
-     * @return AddressCollection
-     */
     private function executeQuery(string $url, string $locale = null): AddressCollection
     {
         if (null !== $locale) {

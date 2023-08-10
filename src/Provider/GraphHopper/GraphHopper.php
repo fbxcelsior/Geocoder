@@ -15,13 +15,14 @@ namespace Geocoder\Provider\GraphHopper;
 use Geocoder\Collection;
 use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\UnsupportedOperation;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Model\Bounds;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Gary Gale <gary@vicchi.org>
@@ -31,12 +32,12 @@ final class GraphHopper extends AbstractHttpProvider implements Provider
     /**
      * @var string
      */
-    const GEOCODE_ENDPOINT_URL = 'https://graphhopper.com/api/1/geocode?q=%s&key=%s&locale=%s&limit=%d';
+    public const GEOCODE_ENDPOINT_URL = 'https://graphhopper.com/api/1/geocode?q=%s&key=%s&locale=%s&limit=%d';
 
     /**
      * @var string
      */
-    const REVERSE_ENDPOINT_URL = 'https://graphhopper.com/api/1/geocode?reverse=true&point=%f,%f&key=%s&locale=%s&limit=%d';
+    public const REVERSE_ENDPOINT_URL = 'https://graphhopper.com/api/1/geocode?reverse=true&point=%f,%f&key=%s&locale=%s&limit=%d';
 
     /**
      * @var string
@@ -44,10 +45,10 @@ final class GraphHopper extends AbstractHttpProvider implements Provider
     private $apiKey;
 
     /**
-     * @param HttpClient $client an HTTP adapter
-     * @param string     $apiKey an API key
+     * @param ClientInterface $client an HTTP adapter
+     * @param string          $apiKey an API key
      */
-    public function __construct(HttpClient $client, string $apiKey)
+    public function __construct(ClientInterface $client, string $apiKey)
     {
         if (empty($apiKey)) {
             throw new InvalidCredentials('No API key provided.');
@@ -57,9 +58,6 @@ final class GraphHopper extends AbstractHttpProvider implements Provider
         parent::__construct($client);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -71,12 +69,14 @@ final class GraphHopper extends AbstractHttpProvider implements Provider
 
         $url = sprintf(self::GEOCODE_ENDPOINT_URL, urlencode($address), $this->apiKey, $query->getLocale(), $query->getLimit());
 
+        $bounds = $query->getBounds();
+        if ($bounds instanceof Bounds) {
+            $url .= sprintf('&bbox=%f,%f,%f,%f', $bounds->getWest(), $bounds->getSouth(), $bounds->getEast(), $bounds->getNorth());
+        }
+
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         $coordinates = $query->getCoordinates();
@@ -88,19 +88,11 @@ final class GraphHopper extends AbstractHttpProvider implements Provider
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'graphhopper';
     }
 
-    /**
-     * @param $url
-     *
-     * @return Collection
-     */
     private function executeQuery(string $url): AddressCollection
     {
         $content = $this->getUrlContents($url);

@@ -13,16 +13,17 @@ declare(strict_types=1);
 namespace Geocoder\Provider\LocationIQ;
 
 use Geocoder\Collection;
-use Geocoder\Exception\InvalidServerResponse;
+use Geocoder\Exception\InvalidArgument;
 use Geocoder\Exception\InvalidCredentials;
+use Geocoder\Exception\InvalidServerResponse;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Location;
 use Geocoder\Model\AddressBuilder;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Srihari Thalla <srihari@unwiredlabs.com>
@@ -32,7 +33,20 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
     /**
      * @var string
      */
-    const BASE_API_URL = 'https://locationiq.org/v1';
+    public const BASE_API_URL = 'https://{region}.locationiq.com/v1';
+
+    /**
+     * @var string
+     */
+    protected $baseUrl;
+
+    /**
+     * @var string[]
+     */
+    protected $regions = [
+        'us1',
+        'eu1',
+    ];
 
     /**
      * @var string
@@ -40,23 +54,26 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
     private $apiKey;
 
     /**
-     * @param HttpClient $client an HTTP adapter
-     * @param string     $apiKey an API key
+     * @param ClientInterface $client an HTTP adapter
+     * @param string          $apiKey an API key
      */
-    public function __construct(HttpClient $client, string $apiKey)
+    public function __construct(ClientInterface $client, string $apiKey, string $region = null)
     {
         if (empty($apiKey)) {
             throw new InvalidCredentials('No API key provided.');
         }
 
         $this->apiKey = $apiKey;
+        if (null === $region) {
+            $region = $this->regions[0];
+        } elseif (true !== in_array($region, $this->regions, true)) {
+            throw new InvalidArgument(sprintf('`region` must be null or one of `%s`', implode('`, `', $this->regions)));
+        }
+        $this->baseUrl = str_replace('{region}', $region, self::BASE_API_URL);
 
         parent::__construct($client);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -85,9 +102,6 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
         return new AddressCollection($results);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         $coordinates = $query->getCoordinates();
@@ -108,12 +122,6 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
         return new AddressCollection([$this->xmlResultToArray($result, $addressParts)]);
     }
 
-    /**
-     * @param \DOMElement $resultNode
-     * @param \DOMElement $addressNode
-     *
-     * @return Location
-     */
     private function xmlResultToArray(\DOMElement $resultNode, \DOMElement $addressNode): Location
     {
         $builder = new AddressBuilder($this->getName());
@@ -135,7 +143,7 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
         $builder->setLocality($this->getNodeValue($addressNode->getElementsByTagName('city')));
         $builder->setSubLocality($this->getNodeValue($addressNode->getElementsByTagName('suburb')));
         $builder->setCountry($this->getNodeValue($addressNode->getElementsByTagName('country')));
-        $builder->setCoordinates($resultNode->getAttribute('lat'), $resultNode->getAttribute('lon'));
+        $builder->setCoordinates((float) $resultNode->getAttribute('lat'), (float) $resultNode->getAttribute('lon'));
 
         $countryCode = $this->getNodeValue($addressNode->getElementsByTagName('country_code'));
         if (!is_null($countryCode)) {
@@ -146,26 +154,17 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
         if ($boundsAttr) {
             $bounds = [];
             list($bounds['south'], $bounds['north'], $bounds['west'], $bounds['east']) = explode(',', $boundsAttr);
-            $builder->setBounds($bounds['south'], $bounds['north'], $bounds['west'], $bounds['east']);
+            $builder->setBounds((float) $bounds['south'], (float) $bounds['north'], (float) $bounds['west'], (float) $bounds['east']);
         }
 
         return $builder->build();
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'locationiq';
     }
 
-    /**
-     * @param string      $url
-     * @param string|null $locale
-     *
-     * @return string
-     */
     private function executeQuery(string $url, string $locale = null): string
     {
         if (null !== $locale) {
@@ -177,15 +176,18 @@ final class LocationIQ extends AbstractHttpProvider implements Provider
 
     private function getGeocodeEndpointUrl(): string
     {
-        return self::BASE_API_URL.'/search.php?q=%s&format=xmlv1.1&addressdetails=1&normalizecity=1&limit=%d&key='.$this->apiKey;
+        return $this->baseUrl.'/search.php?q=%s&format=xmlv1.1&addressdetails=1&normalizecity=1&limit=%d&key='.$this->apiKey;
     }
 
     private function getReverseEndpointUrl(): string
     {
-        return self::BASE_API_URL.'/reverse.php?format=xmlv1.1&lat=%F&lon=%F&addressdetails=1&normalizecity=1&zoom=%d&key='.$this->apiKey;
+        return $this->baseUrl.'/reverse.php?format=xmlv1.1&lat=%F&lon=%F&addressdetails=1&normalizecity=1&zoom=%d&key='.$this->apiKey;
     }
 
-    private function getNodeValue(\DOMNodeList $element)
+    /**
+     * @param \DOMNodeList<\DOMElement> $element
+     */
+    private function getNodeValue(\DOMNodeList $element): ?string
     {
         return $element->length ? $element->item(0)->nodeValue : null;
     }

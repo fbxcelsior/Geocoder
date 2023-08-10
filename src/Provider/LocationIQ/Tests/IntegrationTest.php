@@ -12,32 +12,32 @@ namespace Geocoder\Provider\LocationIQ\Tests;
 
 use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\LocationIQ\LocationIQ;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Srihari Thalla <srihari@unwiredlabs.com>
  */
 class IntegrationTest extends ProviderIntegrationTest
 {
-    protected $skippedTests = [
+    protected array $skippedTests = [
         'testReverseQueryWithNoResults' => 'We weirdly find stuff here...',
     ];
 
-    protected $testIpv4 = false;
+    protected bool $testIpv4 = false;
 
-    protected $testIpv6 = false;
+    protected bool $testIpv6 = false;
 
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
         return new LocationIQ($httpClient, $this->getApiKey());
     }
 
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    protected function getApiKey()
+    protected function getApiKey(): string
     {
         return $_SERVER['LOCATIONIQ_API_KEY'];
     }

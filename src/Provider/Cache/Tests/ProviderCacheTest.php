@@ -18,6 +18,7 @@ use Geocoder\Provider\Cache\ProviderCache;
 use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\SimpleCache\CacheInterface;
 
@@ -27,12 +28,12 @@ use Psr\SimpleCache\CacheInterface;
 class ProviderCacheTest extends TestCase
 {
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject|Provider
+     * @var Provider&MockObject
      */
     private $providerMock;
 
     /**
-     * @var \PHPUnit_Framework_MockObject_MockObject|CacheInterface
+     * @var CacheInterface&MockObject
      */
     private $cacheMock;
 
@@ -50,7 +51,7 @@ class ProviderCacheTest extends TestCase
             ->getMock();
     }
 
-    public function testName()
+    public function testName(): void
     {
         $this->providerMock->expects($this->once())
             ->method('getName')
@@ -60,17 +61,7 @@ class ProviderCacheTest extends TestCase
         $this->assertEquals('foo (cache)', $providerCache->getName());
     }
 
-    public function testMagicFunction()
-    {
-        $this->providerMock->expects($this->once())
-            ->method('getFoo')
-            ->willReturn('foo');
-
-        $providerCache = new ProviderCache($this->providerMock, $this->cacheMock);
-        $this->assertEquals('foo', $providerCache->getFoo());
-    }
-
-    public function testGeocodeMiss()
+    public function testGeocodeMiss(): void
     {
         $query = GeocodeQuery::create('foo');
         $result = new AddressCollection([Address::createFromArray([])]);
@@ -83,7 +74,7 @@ class ProviderCacheTest extends TestCase
         $this->cacheMock->expects($this->once())
             ->method('set')
             ->with($this->anything(), $result, $ttl)
-            ->willReturn(null);
+            ->willReturn(true);
 
         $this->providerMock->expects($this->once())
             ->method('geocodeQuery')
@@ -94,7 +85,7 @@ class ProviderCacheTest extends TestCase
         $providerCache->geocodeQuery($query);
     }
 
-    public function testGeocodeHit()
+    public function testGeocodeHit(): void
     {
         $query = GeocodeQuery::create('foo');
         $result = new AddressCollection([Address::createFromArray([])]);
@@ -114,7 +105,7 @@ class ProviderCacheTest extends TestCase
         $providerCache->geocodeQuery($query);
     }
 
-    public function testReverseMiss()
+    public function testReverseMiss(): void
     {
         $query = ReverseQuery::fromCoordinates(1, 2);
         $result = new AddressCollection([Address::createFromArray([])]);
@@ -127,7 +118,7 @@ class ProviderCacheTest extends TestCase
         $this->cacheMock->expects($this->once())
             ->method('set')
             ->with($this->anything(), $result, $ttl)
-            ->willReturn(null);
+            ->willReturn(true);
 
         $this->providerMock->expects($this->once())
             ->method('reverseQuery')
@@ -138,7 +129,7 @@ class ProviderCacheTest extends TestCase
         $providerCache->reverseQuery($query);
     }
 
-    public function testReverseHit()
+    public function testReverseHit(): void
     {
         $query = ReverseQuery::fromCoordinates(1, 2);
         $result = new AddressCollection([Address::createFromArray([])]);
@@ -156,5 +147,34 @@ class ProviderCacheTest extends TestCase
 
         $providerCache = new ProviderCache($this->providerMock, $this->cacheMock, $ttl);
         $providerCache->reverseQuery($query);
+    }
+
+    public function testCacheSeparation(): void
+    {
+        $query = GeocodeQuery::create('foo');
+        $ttl = 4711;
+
+        $this->providerMock->expects($this->any())
+            ->method('getName')
+            ->willReturn('foo');
+
+        $getCacheKey = self::getMethod('getCacheKey');
+
+        $providerCache = new ProviderCache($this->providerMock, $this->cacheMock, $ttl);
+        $providerCacheWithSeparation = new ProviderCache($this->providerMock, $this->cacheMock, $ttl, true);
+
+        $this->assertNotEquals(
+            $getCacheKey->invokeArgs($providerCache, [$query]),
+            $getCacheKey->invokeArgs($providerCacheWithSeparation, [$query])
+        );
+    }
+
+    protected static function getMethod(string $name): \ReflectionMethod
+    {
+        $class = new \ReflectionClass(ProviderCache::class);
+        $method = $class->getMethod($name);
+        $method->setAccessible(true);
+
+        return $method;
     }
 }

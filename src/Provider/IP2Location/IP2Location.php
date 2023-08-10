@@ -12,16 +12,16 @@ declare(strict_types=1);
 
 namespace Geocoder\Provider\IP2Location;
 
+use Geocoder\Collection;
 use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\UnsupportedOperation;
-use Geocoder\Collection;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author William Durand <william.durand1@gmail.com>
@@ -31,7 +31,7 @@ final class IP2Location extends AbstractHttpProvider implements Provider
     /**
      * @var string
      */
-    const ENDPOINT_URL = 'https://api.ip2location.com/v2/?key=%s&ip=%s&format=json&package=WS9';
+    public const ENDPOINT_URL = 'https://api.ip2location.com/v2/?key=%s&ip=%s&format=json&package=WS9';
 
     /**
      * @var string
@@ -44,10 +44,10 @@ final class IP2Location extends AbstractHttpProvider implements Provider
     private $endpointUrl;
 
     /**
-     * @param HttpClient $client a HTTP adapter
-     * @param string     $apiKey an API key
+     * @param ClientInterface $client a HTTP adapter
+     * @param string          $apiKey an API key
      */
-    public function __construct(HttpClient $client, string $apiKey)
+    public function __construct(ClientInterface $client, string $apiKey)
     {
         parent::__construct($client);
 
@@ -55,9 +55,6 @@ final class IP2Location extends AbstractHttpProvider implements Provider
         $this->endpointUrl = self::ENDPOINT_URL;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -79,27 +76,16 @@ final class IP2Location extends AbstractHttpProvider implements Provider
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         throw new UnsupportedOperation('The IP2Location provider is not able to do reverse geocoding.');
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'ip2location';
     }
 
-    /**
-     * @param string $url
-     *
-     * @return Collection
-     */
     private function executeQuery(string $url): AddressCollection
     {
         $content = $this->getUrlContents($url);
@@ -110,14 +96,14 @@ final class IP2Location extends AbstractHttpProvider implements Provider
         }
 
         if (isset($data['response'])) {
-            if (preg_match('/suspended|denied|invalid account/i', $data['response'])) {
+            if (preg_match('/suspended|denied|invalid/i', $data['response'])) {
                 throw new InvalidCredentials('API Key provided is not valid.');
             } elseif (preg_match('/insufficient/i', $data['response'])) {
                 throw new InvalidCredentials('Insufficient credits to use IP2Location service.');
             } elseif (preg_match('/invalid ip address/i', $data['response'])) {
                 throw new UnsupportedOperation('Invalid IP address.');
             } else {
-                throw new UnsupportedOperation('Unexpected error.');
+                throw new UnsupportedOperation(sprintf('Unexpected error: %s.', $data['response']));
             }
         }
 

@@ -14,29 +14,29 @@ namespace Geocoder\Provider\GeoPlugin\Tests;
 
 use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\GeoPlugin\GeoPlugin;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
  */
 class IntegrationTest extends ProviderIntegrationTest
 {
-    protected $testAddress = false;
+    protected bool $testAddress = false;
 
-    protected $testReverse = false;
+    protected bool $testReverse = false;
 
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
-        return new GeoPlugin($httpClient, $this->getApiKey());
+        return new GeoPlugin($httpClient);
     }
 
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    protected function getApiKey()
+    protected function getApiKey(): string
     {
-        return null;
+        return '';
     }
 }

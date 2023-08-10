@@ -15,13 +15,13 @@ namespace Geocoder\Provider\TomTom;
 use Geocoder\Collection;
 use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\UnsupportedOperation;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Antoine Corcy <contact@sbin.dk>
@@ -31,12 +31,12 @@ final class TomTom extends AbstractHttpProvider implements Provider
     /**
      * @var string
      */
-    const GEOCODE_ENDPOINT_URL = 'https://api.tomtom.com/search/2/geocode/%s.json?key=%s&limit=%d';
+    public const GEOCODE_ENDPOINT_URL = 'https://api.tomtom.com/search/2/geocode/%s.json?key=%s&limit=%d';
 
     /**
      * @var string
      */
-    const REVERSE_ENDPOINT_URL = 'https://api.tomtom.com/search/2/reverseGeocode/%F,%F.json?key=%s';
+    public const REVERSE_ENDPOINT_URL = 'https://api.tomtom.com/search/2/reverseGeocode/%F,%F.json?key=%s';
 
     /**
      * @var string
@@ -44,10 +44,10 @@ final class TomTom extends AbstractHttpProvider implements Provider
     private $apiKey;
 
     /**
-     * @param HttpClient $client an HTTP adapter
-     * @param string     $apiKey an API key
+     * @param ClientInterface $client an HTTP adapter
+     * @param string          $apiKey an API key
      */
-    public function __construct(HttpClient $client, string $apiKey)
+    public function __construct(ClientInterface $client, string $apiKey)
     {
         if (empty($apiKey)) {
             throw new InvalidCredentials('No API key provided.');
@@ -57,9 +57,6 @@ final class TomTom extends AbstractHttpProvider implements Provider
         parent::__construct($client);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -108,9 +105,6 @@ final class TomTom extends AbstractHttpProvider implements Provider
         return new AddressCollection($locations);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         $coordinates = $query->getCoordinates();
@@ -143,6 +137,7 @@ final class TomTom extends AbstractHttpProvider implements Provider
                 'streetNumber' => $item['address']['streetNumber'] ?? null,
                 'locality' => $item['address']['municipality'] ?? null,
                 'subLocality' => $item['address']['municipalitySubdivision'] ?? null,
+                'postalCode' => $item['address']['postalCode'] ?? null,
                 'country' => $item['address']['country'] ?? null,
                 'countryCode' => $item['address']['countryCode'] ?? null,
             ]);
@@ -151,9 +146,6 @@ final class TomTom extends AbstractHttpProvider implements Provider
         return new AddressCollection($locations);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'tomtom';

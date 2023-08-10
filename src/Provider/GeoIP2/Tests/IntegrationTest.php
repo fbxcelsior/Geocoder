@@ -16,35 +16,35 @@ use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\GeoIP2\GeoIP2;
 use Geocoder\Provider\GeoIP2\GeoIP2Adapter;
 use GeoIp2\Database\Reader;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
  */
 class IntegrationTest extends ProviderIntegrationTest
 {
-    protected $testAddress = false;
+    protected bool $testAddress = false;
 
-    protected $testReverse = false;
+    protected bool $testReverse = false;
 
-    protected $testIpv6 = false;
+    protected bool $testIpv6 = false;
 
-    protected $testHttpProvider = false;
+    protected bool $testHttpProvider = false;
 
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
         $reader = new Reader(__DIR__.'/fixtures/GeoLite2-City.mmdb');
 
         return new GeoIP2(new GeoIP2Adapter($reader));
     }
 
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    protected function getApiKey()
+    protected function getApiKey(): string
     {
-        return null;
+        return '';
     }
 }

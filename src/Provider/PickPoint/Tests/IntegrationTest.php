@@ -12,24 +12,24 @@ namespace Geocoder\Provider\PickPoint\Tests;
 
 use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\PickPoint\PickPoint;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Vladimir Kalinkin <vova.kalinkin@gmail.com>
  */
 class IntegrationTest extends ProviderIntegrationTest
 {
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
         return new PickPoint($httpClient, $this->getApiKey());
     }
 
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    protected function getApiKey()
+    protected function getApiKey(): string
     {
         return $_SERVER['PICKPOINT_API_KEY'];
     }

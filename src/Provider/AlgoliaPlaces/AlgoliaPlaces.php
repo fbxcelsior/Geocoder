@@ -22,27 +22,27 @@ use Geocoder\Model\AddressCollection;
 use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 
 class AlgoliaPlaces extends AbstractHttpProvider implements Provider
 {
-    const TYPE_CITY = 'city';
+    public const TYPE_CITY = 'city';
 
-    const TYPE_COUNTRY = 'country';
+    public const TYPE_COUNTRY = 'country';
 
-    const TYPE_ADDRESS = 'address';
+    public const TYPE_ADDRESS = 'address';
 
-    const TYPE_BUS_STOP = 'busStop';
+    public const TYPE_BUS_STOP = 'busStop';
 
-    const TYPE_TRAIN_STATION = 'trainStation';
+    public const TYPE_TRAIN_STATION = 'trainStation';
 
-    const TYPE_TOWN_HALL = 'townhall';
+    public const TYPE_TOWN_HALL = 'townhall';
 
-    const TYPE_AIRPORT = 'airport';
+    public const TYPE_AIRPORT = 'airport';
 
     /** @var string */
-    const ENDPOINT_URL_SSL = 'https://places-dsn.algolia.net/1/places/query';
+    public const ENDPOINT_URL_SSL = 'https://places-dsn.algolia.net/1/places/query';
 
     /** @var string */
     private $apiKey;
@@ -53,15 +53,11 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
     /** @var GeocodeQuery */
     private $query;
 
-    /** @var HttpClient */
-    private $client;
-
-    public function __construct(HttpClient $client, string $apiKey = null, string $appId = null)
+    public function __construct(ClientInterface $client, string $apiKey = null, string $appId = null)
     {
         parent::__construct($client);
 
         $this->apiKey = $apiKey;
-        $this->client = $client;
         $this->appId = $appId;
     }
 
@@ -79,7 +75,7 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
         $this->query = $query;
 
         $request = $this->getRequest(self::ENDPOINT_URL_SSL);
-        $jsonParsed = AbstractHttpProvider::getParsedResponse($request);
+        $jsonParsed = $this->getParsedResponse($request);
         $jsonResponse = json_decode($jsonParsed, true);
 
         if (is_null($jsonResponse)) {
@@ -101,6 +97,9 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
         throw new UnsupportedOperation('The AlgoliaPlaces provided does not support reverse geocoding.');
     }
 
+    /**
+     * @return string[]
+     */
     public function getTypes(): array
     {
         return [
@@ -149,6 +148,9 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
         return $type;
     }
 
+    /**
+     * @return string[]
+     */
     private function buildCountries(GeocodeQuery $query): array
     {
         return array_map(function (string $country) {
@@ -161,7 +163,7 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @return array
+     * @return array<string, string>
      */
     private function buildHeaders(): array
     {
@@ -176,10 +178,7 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * @param array       $jsonResponse
-     * @param string|null $locale
-     *
-     * @return AddressCollection
+     * @param array<string, mixed> $jsonResponse
      */
     private function buildResult(array $jsonResponse, string $locale = null): AddressCollection
     {
@@ -224,9 +223,7 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
      * When no locale was set in the query, Algolia will return results for all locales.
      * In this case, we return the default locale value.
      *
-     * @param array       $result
-     * @param string      $attribute
-     * @param string|null $locale
+     * @param array<string, mixed> $result
      *
      * @return string|int|float
      */

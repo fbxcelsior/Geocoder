@@ -15,15 +15,15 @@ namespace Geocoder\Provider\Photon;
 use Geocoder\Collection;
 use Geocoder\Exception\InvalidServerResponse;
 use Geocoder\Exception\UnsupportedOperation;
+use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Location;
 use Geocoder\Model\AddressBuilder;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Provider\Photon\Model\PhotonAddress;
+use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Geocoder\Http\Provider\AbstractHttpProvider;
-use Geocoder\Provider\Provider;
-use Geocoder\Provider\Photon\Model\PhotonAddress;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Niklas Närhinen <niklas@narhinen.net>
@@ -37,29 +37,24 @@ final class Photon extends AbstractHttpProvider implements Provider
     private $rootUrl;
 
     /**
-     * @param HttpClient $client an HTTP client
-     *
-     * @return Photon
+     * @param ClientInterface $client an HTTP client
      */
-    public static function withKomootServer(HttpClient $client): self
+    public static function withKomootServer(ClientInterface $client): self
     {
         return new self($client, 'https://photon.komoot.io');
     }
 
     /**
-     * @param HttpClient $client  an HTTP client
-     * @param string     $rootUrl Root URL of the photon server
+     * @param ClientInterface $client  an HTTP client
+     * @param string          $rootUrl Root URL of the photon server
      */
-    public function __construct(HttpClient $client, $rootUrl)
+    public function __construct(ClientInterface $client, $rootUrl)
     {
         parent::__construct($client);
 
         $this->rootUrl = rtrim($rootUrl, '/');
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $address = $query->getText();
@@ -77,7 +72,7 @@ final class Photon extends AbstractHttpProvider implements Provider
                 'lang' => $query->getLocale(),
             ]);
 
-        $json = $this->executeQuery($url, $query->getLocale());
+        $json = $this->executeQuery($url);
 
         if (!isset($json->features) || empty($json->features)) {
             return new AddressCollection([]);
@@ -91,9 +86,6 @@ final class Photon extends AbstractHttpProvider implements Provider
         return new AddressCollection($results);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         $coordinates = $query->getCoordinates();
@@ -123,11 +115,6 @@ final class Photon extends AbstractHttpProvider implements Provider
         return new AddressCollection($results);
     }
 
-    /**
-     * @param \stdClass $feature
-     *
-     * @return Location
-     */
     private function featureToAddress(\stdClass $feature): Location
     {
         $builder = new AddressBuilder($this->getName());
@@ -142,36 +129,35 @@ final class Photon extends AbstractHttpProvider implements Provider
         $builder->setPostalCode($properties->postcode ?? null);
         $builder->setLocality($properties->city ?? null);
         $builder->setCountry($properties->country ?? null);
+        $builder->setCountryCode($properties->countrycode ?? null);
 
         if (isset($properties->extent)) {
             $builder->setBounds($properties->extent[0], $properties->extent[2], $properties->extent[1], $properties->extent[3]);
         }
 
-        $address = $builder->build(PhotonAddress::class)
+        /** @var PhotonAddress $address */
+        $address = $builder->build(PhotonAddress::class);
+
+        $address = $address
             ->withOSMId($properties->osm_id ?? null)
             ->withOSMType($properties->osm_type ?? null)
             ->withOSMTag(
                 $properties->osm_key ?? null,
                 $properties->osm_value ?? null
             )
-            ->withName($properties->name ?? null);
+            ->withName($properties->name ?? null)
+            ->withState($properties->state ?? null)
+            ->withCounty($properties->county ?? null)
+            ->withDistrict($properties->district ?? null);
 
         return $address;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'photon';
     }
 
-    /**
-     * @param string $url
-     *
-     * @return \stdClass
-     */
     private function executeQuery(string $url): \stdClass
     {
         $content = $this->getUrlContents($url);

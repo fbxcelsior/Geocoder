@@ -14,17 +14,17 @@ namespace Geocoder\Provider\OpenRouteService;
 
 use Geocoder\Collection;
 use Geocoder\Exception\InvalidCredentials;
-use Geocoder\Query\GeocodeQuery;
-use Geocoder\Query\ReverseQuery;
 use Geocoder\Provider\Pelias\Pelias;
 use Geocoder\Provider\Provider;
-use Http\Client\HttpClient;
+use Geocoder\Query\GeocodeQuery;
+use Geocoder\Query\ReverseQuery;
+use Psr\Http\Client\ClientInterface;
 
 final class OpenRouteService extends Pelias implements Provider
 {
-    const API_URL = 'https://api.openrouteservice.org/geocode';
+    public const API_URL = 'https://api.openrouteservice.org/geocode';
 
-    const API_VERSION = 1;
+    public const API_VERSION = 1;
 
     /**
      * @var string
@@ -32,10 +32,10 @@ final class OpenRouteService extends Pelias implements Provider
     private $apiKey;
 
     /**
-     * @param HttpClient $client an HTTP adapter
-     * @param string     $apiKey an API key
+     * @param ClientInterface $client an HTTP adapter
+     * @param string          $apiKey an API key
      */
-    public function __construct(HttpClient $client, string $apiKey)
+    public function __construct(ClientInterface $client, string $apiKey)
     {
         if (empty($apiKey)) {
             throw new InvalidCredentials('No API key provided.');
@@ -55,9 +55,6 @@ final class OpenRouteService extends Pelias implements Provider
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function geocodeQuery(GeocodeQuery $query): Collection
     {
         $url = $this->getGeocodeQueryUrl($query, [
@@ -67,9 +64,6 @@ final class OpenRouteService extends Pelias implements Provider
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function reverseQuery(ReverseQuery $query): Collection
     {
         $url = $this->getReverseQueryUrl($query, [
@@ -79,9 +73,6 @@ final class OpenRouteService extends Pelias implements Provider
         return $this->executeQuery($url);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'openrouteservice';

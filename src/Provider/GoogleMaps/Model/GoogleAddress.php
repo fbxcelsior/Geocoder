@@ -32,7 +32,7 @@ final class GoogleAddress extends Address
     private $locationType;
 
     /**
-     * @var array
+     * @var string[]
      */
     private $resultType = [];
 
@@ -122,8 +122,6 @@ final class GoogleAddress extends Address
     private $partialMatch;
 
     /**
-     * @param string|null $id
-     *
      * @return GoogleAddress
      */
     public function withId(string $id = null)
@@ -145,8 +143,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $locationType
-     *
      * @return GoogleAddress
      */
     public function withLocationType(string $locationType = null)
@@ -166,7 +162,7 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @return array
+     * @return string[]
      */
     public function getResultType(): array
     {
@@ -174,7 +170,7 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param array $resultType
+     * @param string[] $resultType
      *
      * @return GoogleAddress
      */
@@ -195,8 +191,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $formattedAddress
-     *
      * @return GoogleAddress
      */
     public function withFormattedAddress(string $formattedAddress = null)
@@ -216,8 +210,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $airport
-     *
      * @return GoogleAddress
      */
     public function withAirport(string $airport = null)
@@ -237,8 +229,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $colloquialArea
-     *
      * @return GoogleAddress
      */
     public function withColloquialArea(string $colloquialArea = null)
@@ -258,8 +248,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $intersection
-     *
      * @return GoogleAddress
      */
     public function withIntersection(string $intersection = null)
@@ -279,8 +267,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $postalCodeSuffix
-     *
      * @return GoogleAddress
      */
     public function withPostalCodeSuffix(string $postalCodeSuffix = null)
@@ -300,8 +286,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $naturalFeature
-     *
      * @return GoogleAddress
      */
     public function withNaturalFeature(string $naturalFeature = null)
@@ -321,8 +305,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $neighborhood
-     *
      * @return GoogleAddress
      */
     public function withNeighborhood(string $neighborhood = null)
@@ -342,8 +324,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $park
-     *
      * @return GoogleAddress
      */
     public function withPark(string $park = null)
@@ -363,8 +343,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $pointOfInterest
-     *
      * @return GoogleAddress
      */
     public function withPointOfInterest(string $pointOfInterest = null)
@@ -384,8 +362,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $political
-     *
      * @return GoogleAddress
      */
     public function withPolitical(string $political = null)
@@ -426,8 +402,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $streetAddress
-     *
      * @return GoogleAddress
      */
     public function withStreetAddress(string $streetAddress = null)
@@ -447,8 +421,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $subpremise
-     *
      * @return GoogleAddress
      */
     public function withSubpremise(string $subpremise = null)
@@ -468,8 +440,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $ward
-     *
      * @return GoogleAddress
      */
     public function withWard(string $ward = null)
@@ -489,8 +459,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param string|null $establishment
-     *
      * @return GoogleAddress
      */
     public function withEstablishment(string $establishment = null)
@@ -510,27 +478,32 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param array $subLocalityLevel
+     * @param array<array{level: int, name: string, code: string}> $subLocalityLevel
      *
      * @return $this
      */
     public function withSubLocalityLevels(array $subLocalityLevel)
     {
+        $levels = array_filter($subLocalityLevel, function ($level) {
+            return !empty($level['level']) && (!empty($level['name']) || !empty($level['code']));
+        });
+
+        $levelCount = array_count_values(array_column($levels, 'level'));
+
         $subLocalityLevels = [];
-        foreach ($subLocalityLevel as $level) {
-            if (empty($level['level'])) {
-                continue;
-            }
+        foreach ($levelCount as $level => $count) {
+            $_levels = array_filter($levels, function ($l) use ($level) {
+                return $l['level'] === $level;
+            });
 
-            $name = $level['name'] ?? $level['code'] ?? '';
-            if (empty($name)) {
-                continue;
-            }
+            $names = array_filter(array_column($_levels, 'name'), function ($name) { return !empty($name); });
+            $codes = array_filter(array_column($_levels, 'code'), function ($code) { return !empty($code); });
 
-            $subLocalityLevels[] = new AdminLevel($level['level'], $name, $level['code'] ?? null);
+            $name = count($names) > 0 ? implode(' / ', $names) : implode(' / ', $codes);
+            $code = count($codes) > 0 ? implode(' / ', $codes) : null;
+
+            $subLocalityLevels[] = new AdminLevel($level, $name, $code);
         }
-
-        $subLocalityLevels = array_unique($subLocalityLevels);
 
         $new = clone $this;
         $new->subLocalityLevels = new AdminLevelCollection($subLocalityLevels);
@@ -547,8 +520,6 @@ final class GoogleAddress extends Address
     }
 
     /**
-     * @param bool $partialMatch
-     *
      * @return $this
      */
     public function withPartialMatch(bool $partialMatch)

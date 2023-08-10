@@ -14,20 +14,20 @@ namespace Geocoder\Provider\Geoip\Tests;
 
 use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\Geoip\Geoip;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
  */
 class IntegrationTest extends ProviderIntegrationTest
 {
-    protected $testAddress = false;
+    protected bool $testAddress = false;
 
-    protected $testReverse = false;
+    protected bool $testReverse = false;
 
-    protected $testIpv6 = false;
+    protected bool $testIpv6 = false;
 
-    protected $testHttpProvider = false;
+    protected bool $testHttpProvider = false;
 
     protected function setUp(): void
     {
@@ -36,18 +36,18 @@ class IntegrationTest extends ProviderIntegrationTest
         }
     }
 
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
         return new Geoip();
     }
 
-    protected function getCacheDir()
+    protected function getCacheDir(): string
     {
         return __DIR__.'/.cached_responses';
     }
 
-    protected function getApiKey()
+    protected function getApiKey(): string
     {
-        return null;
+        return '';
     }
 }
