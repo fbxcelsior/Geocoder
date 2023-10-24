@@ -32,7 +32,7 @@ class Assert
         }
     }
 
-    public static function notNull(mixed $value, string $message = ''): void
+    public static function notNull($value, string $message = ''): void
     {
         if (null === $value) {
             throw new InvalidArgument(sprintf($message ?: 'Value cannot be null'));
